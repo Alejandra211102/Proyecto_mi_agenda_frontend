@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, Plus, X, Trash2, Edit2, ChevronLeft, ChevronRight, Check } from 'lucide-react';
 
 // IMPORTANTE: Cambia esta URL si tu backend está en otro puerto
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const API_URL = 'http://localhost:3000/api';
 
 export default function AgendaPersonal() {
   const [eventos, setEventos] = useState([]);
@@ -10,6 +10,7 @@ export default function AgendaPersonal() {
   const [mostrarModal, setMostrarModal] = useState(false);
   const [eventoEditar, setEventoEditar] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [notificaciones, setNotificaciones] = useState([]);
 
   const [formData, setFormData] = useState({
     titulo: '',
@@ -24,8 +25,11 @@ export default function AgendaPersonal() {
 
   useEffect(() => {
     cargarEventos();
-    // Actualizar eventos cada 30 segundos
-    const interval = setInterval(cargarEventos, 30000);
+    cargarNotificaciones();
+    const interval = setInterval(() => {
+      cargarEventos();
+      cargarNotificaciones();
+    }, 60000); // Actualizar cada minuto
     return () => clearInterval(interval);
   }, []);
 
@@ -42,6 +46,31 @@ export default function AgendaPersonal() {
       console.error('Error cargando eventos:', error);
       alert('Error al conectar con el servidor. Verifica que el backend esté corriendo en http://localhost:3000');
       setLoading(false);
+    }
+  };
+
+  const cargarNotificaciones = async () => {
+    try {
+      const response = await fetch(`${API_URL}/notificaciones`);
+      if (response.ok) {
+        const data = await response.json();
+        setNotificaciones(data);
+        
+        // Mostrar notificación del navegador si hay eventos próximos
+        if (data.length > 0 && 'Notification' in window) {
+          if (Notification.permission === 'granted') {
+            const evento = data[0];
+            new Notification(`🔔 Evento próximo: ${evento.titulo}`, {
+              body: `En ${evento.minutos_restantes} minutos`,
+              icon: '/favicon.ico'
+            });
+          } else if (Notification.permission !== 'denied') {
+            Notification.requestPermission();
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error cargando notificaciones:', error);
     }
   };
 
@@ -294,6 +323,28 @@ export default function AgendaPersonal() {
               Nuevo
             </button>
           </div>
+
+          {/* Panel de Notificaciones */}
+          {notificaciones.length > 0 && (
+            <div className="mt-4 p-4 bg-orange-50 border-l-4 border-orange-500 rounded-lg">
+              <div className="flex items-start gap-3">
+                <div className="text-orange-500 text-2xl">🔔</div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-orange-800 mb-2">Eventos Próximos</h3>
+                  <div className="space-y-2">
+                    {notificaciones.map(notif => (
+                      <div key={notif.id} className="text-sm text-orange-700">
+                        <span className="font-semibold">{notif.titulo}</span> - 
+                        <span className="ml-1">
+                          En {notif.minutos_restantes} minuto{notif.minutos_restantes !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Navegación del calendario */}
           <div className="flex items-center justify-between">
