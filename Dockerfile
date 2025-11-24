@@ -8,9 +8,6 @@ RUN npm ci
 
 COPY . .
 
-# Configurar variable de entorno para el build
-ENV VITE_API_URL=http://localhost:3000/api
-
 RUN npm run build
 
 # Etapa 2: Servidor de producción con Nginx
