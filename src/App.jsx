@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, Plus, X, Trash2, Edit2, ChevronLeft, ChevronRight, Check } from 'lucide-react';
 
+
 // IMPORTANTE: Cambia esta URL si tu backend está en otro puerto
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
